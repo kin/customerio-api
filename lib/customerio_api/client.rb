@@ -2,6 +2,15 @@ require 'net/http'
 
 module CustomerioAPI
   class Client
+    class InvalidRequest < RuntimeError; end
+    class InvalidResponse < RuntimeError
+      attr_reader :response
+
+      def initialize(message, response)
+        super(message)
+        @response = response
+      end
+    end
 
     def initialize(site_id, secret_key)
       @username = site_id
@@ -11,11 +20,13 @@ module CustomerioAPI
     end
 
     def message(message_id)
-      request(:get, message_path(message_id))
+      response = request(:get, message_path(message_id))
+      verify_response(response)
     end
 
     def messages(limit: nil)
-      request(:get, messages_path)
+      response = request(:get, messages_path)
+      verify_response(response)
     end
 
     private
@@ -36,6 +47,14 @@ module CustomerioAPI
       end
     end
 
+    def verify_response(response)
+      if response.code[0].to_i == 2
+        response
+      else
+        raise InvalidResponse.new("CustomerIO returned an invalid response: #{response.code}", response)
+      end
+    end
+
     def message_path(message_id)
       "/v1/api/messages/#{message_id}"
     end
@@ -49,7 +68,7 @@ module CustomerioAPI
       when :get
         Net::HTTP::Get
       else
-        # bad stuff
+        raise InvalidRequest.new("Invalid request: #{type}")
       end
     end
   end
