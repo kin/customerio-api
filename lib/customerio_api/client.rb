@@ -24,8 +24,14 @@ module CustomerioAPI
       verify_response(response)
     end
 
-    def messages(limit: nil)
-      response = request(:get, messages_path)
+    def messages(**args)
+      url_path = messages_path
+      args.each_with_index do |arg, index|
+        url_path += index == 0 ? '?' : '&'
+        url_path += "#{arg.first.to_s}=#{arg.last}"
+      end
+
+      response = request(:get, url_path)
       verify_response(response)
     end
 
