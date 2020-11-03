@@ -12,9 +12,8 @@ module CustomerioAPI
       end
     end
 
-    def initialize(site_id, secret_key)
-      @username = site_id
-      @passwork = secret_key
+    def initialize(secret_key)
+      @key = "Bearer #{secret_key}"
       @base_url = "https://beta-api.customer.io"
       @timeout = 10
     end
@@ -46,7 +45,7 @@ module CustomerioAPI
       session.read_timeout = @timeout
 
       req = request_type(type).new(uri.path)
-      req.basic_auth @username, @password
+      req['Authorization'] = @key
 
       session.start do |http|
         http.request(req)
@@ -55,7 +54,7 @@ module CustomerioAPI
 
     def verify_response(response)
       if response.code[0].to_i == 2
-        response
+        JSON.parse(response.body)
       else
         raise InvalidResponse.new("CustomerIO returned an invalid response: #{response.code}", response)
       end
